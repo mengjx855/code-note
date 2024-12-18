@@ -1,8 +1,5 @@
-# Jinxin Meng, 20240308, 20240308
-# encoding: utf-8
-# e-mail: mengjx855@163.com
+#### Jinxin Meng, 20240308, 20241010 v0.1 ####
 
-# version: 0.1
 # 2023-11-01: add all_group parameter in profile_filter.
 # 2023-12-19: add function profile_replace.
 
@@ -11,7 +8,7 @@ library(tibble)
 library(tidyr)
 library(purrr)
 
-# LOG ---------------------------------------------
+#### LOG ####
 # LOG transformation method in MaAsLin2;
 # The default log transformation incorporated into MaAsLin does add a pseudo-count;
 # As is best-known practice currently, the pseudo-count is half the minimum feature; 
@@ -19,17 +16,17 @@ library(purrr)
 LOG2 <- function(x) log2(replace(x, x == 0, min(x[x > 0]) / 2))
 LOG10 <- function(x) log10(replace(x, x == 0, min(x[x > 0]) / 2))
 
-# profile_transLOG ---------------------------------------------
+#### profile_transLOG ####
 # conduct LOG transformation for a otu_table, rows represent features, and columns represent samples.
 profile_transLOG2 <- function(profile) apply(profile, 1, LOG2) %>% t() %>% data.frame(check.names = F)
 profile_transLOG10 <- function(profile) apply(profile, 1, LOG10) %>% t() %>% data.frame(check.names = F)
   
-# profile_transRA ---------------------------------------------
+#### profile_transRA ####
 # Jinxin Meng, 20231119
 # replace some value meeting parameter to specified value.
 profile_transRA <- function(profile) apply(data.frame(profile, check.names = F), 2, \(x) x/sum(na.omit(x))*100) %>% data.frame(check.names = F)
 
-# profile_filter ---------------------------------------------
+#### profile_filter ####
 # profile: input a data.frame of relative abundance profile.
 # group: mapping (sample|group), also specify by map_names parameter.
 # by_group: filter feature in each group.
@@ -55,7 +52,7 @@ profile_filter <- function(profile, group, group_colnames = NULL,
         group_by(group) %>% 
         group_modify(~ purrr::map_df(.x, \(x) sum(x > min_abundance)/length(x))) %>%
         ungroup() %>% 
-        select(-group)
+        dplyr::select(-group)
       if (isTRUE(all_group)) {
         flag_vec <- map_vec(prevalence, \(x) all(x > min_prevalence)) 
       } else { 
@@ -65,11 +62,11 @@ profile_filter <- function(profile, group, group_colnames = NULL,
       count <- data.frame(t(profile), check.names = F) %>% 
         mutate(group = group$group[match(rownames(.), group$sample)]) %>% 
         group_by(group) %>% group_modify(~ purrr::map_df(.x, \(x) sum(x > min_abundance))) %>%
-        ungroup() %>% select(-group)
+        ungroup() %>% dplyr::select(-group)
       if (isTRUE(all_group)) {
-        flag_vec <- map_vec(count, \(x) all(x > min_n))
+        flag_vec <- map_vec(count, \(x) all(x >= min_n))
       } else { 
-        flag_vec <- map_vec(count, \(x) sum(x > min_n) >= n_group)
+        flag_vec <- map_vec(count, \(x) sum(x >= min_n) >= n_group)
       }
     }
     flag_vec <- names(flag_vec[flag_vec])
@@ -78,9 +75,11 @@ profile_filter <- function(profile, group, group_colnames = NULL,
     # 不按照分组。计算整体的流行率
   } else if (!isTRUE(by_group)) {
     if (!is.null(min_prevalence) & is.numeric(min_prevalence)) {
-      flag_vec <- purrr::map_vec(data.frame(t(profile)), \(x) sum(x > min_abundance)/length(x) > min_prevalence)
+      flag_vec <- purrr::map_vec(data.frame(t(profile), check.names = F), \(x) 
+                                 sum(x > min_abundance)/length(x) > min_prevalence)
     } else if (!is.null(min_n) & is.numeric(min_n)) {
-      flag_vec <- purrr::map_vec(data.frame(t(profile)), \(x) sum(x > min_abundance) > min_n)
+      flag_vec <- purrr::map_vec(data.frame(t(profile), check.names = F), \(x) 
+                                 sum(x > min_abundance) >= min_n)
     }
     flag_vec <- names(flag_vec[flag_vec])
     profile <- profile[flag_vec,]
@@ -90,7 +89,7 @@ profile_filter <- function(profile, group, group_colnames = NULL,
   return(profile)
 }
 
-# profile_smp2grp ---------------------------------------------
+#### profile_smp2grp ####
 # Jinxin Meng, 20231118
 # method: merge column method. please get help in summarise_all() function.
 profile_smp2grp <- function(profile, group, group_colnames = NULL, method = "mean"){
@@ -108,7 +107,7 @@ profile_smp2grp <- function(profile, group, group_colnames = NULL, method = "mea
 }
 
 
-# profile_smp2grp_2 ---------------------------------------------
+#### profile_smp2grp_2 ####
 # Jinxin Meng, 20240814, for profile containing NA or NAN .....
 profile_smp2grp_2 <- function(profile, group, group_colnames = NULL, method = "mean"){
   if (!all(c("sample", "group") %in% colnames(group)) & is.null(group_colnames)) stop("group field (sample|group)")
@@ -133,7 +132,7 @@ profile_smp2grp_2 <- function(profile, group, group_colnames = NULL, method = "m
   return(out)
 }
 
-# profile_replace ---------------------------------------------
+#### profile_replace ####
 # Jinxin Meng, 20231119
 # replace some value meeting parameter to specified value.
 profile_replace <- function(profile, min_val = 1, fill = 0, transRA = F){
@@ -144,7 +143,7 @@ profile_replace <- function(profile, min_val = 1, fill = 0, transRA = F){
   return(profile)
 }
 
-# profile_adjacency ---------------------------------------------
+#### profile_adjacency ####
 # Jinxin Meng, 20231119
 # profile to adjacent matrix
 profile_adjacency <- function(profile){
@@ -153,7 +152,7 @@ profile_adjacency <- function(profile){
   return(profile)
 }
 
-# profile_prevalence ---------------------------------------------
+#### profile_prevalence ####
 # prevalence of each feature in all samples or samples belonged to each group
 profile_prevalence <- function(profile, group, by_group = T, min_abundance = 0, count = F) {
   if (isTRUE(by_group) & missing(group)) stop("if by_group = TRUE, group (field: sample|group) should be provided ..")
@@ -183,7 +182,7 @@ profile_prevalence <- function(profile, group, by_group = T, min_abundance = 0, 
   return(prevalence)
 }
 
-# profile_statistics ---------------------------------------------
+#### profile_statistics ####
 profile_statistics <- function(profile, group, group_colnames = NULL, 
                                by_group = T) {
   profile <- data.frame(profile, check.names = F)
@@ -195,7 +194,6 @@ profile_statistics <- function(profile, group, group_colnames = NULL,
       t %>% 
       data.frame(check.names = F) %>% 
       mutate(group = group$group[match(rownames(.), group$sample)]) %>% 
-      select(500:507)
     var = unique(group$group)[1]
     
     data <- cbind(
@@ -236,3 +234,42 @@ profile_statistics <- function(profile, group, group_colnames = NULL,
   }
   
 }
+#### profile_KEGG_convert ####
+profile_KEGG_convert <- function(profile, to = "A", database = "/database/KEGG/v20230401/KO_level_A_B_C_D_Description"){
+  renames <- list("A" = "lvA", "B" = "lvB", "C" = "lvC")
+  kegg_db <- read.delim(database, sep = "\t", quote = "") %>%
+    dplyr::select(name = renames[[to]], lvD) %>% 
+    distinct() %>% 
+    filter(lvD %in% rownames(profile)) %>% 
+    group_by(lvD) %>% 
+    group_modify(~data.frame(name = paste(.x$name, collapse = "|")))
+  
+  data <- profile %>% 
+    mutate(name = kegg_db$name[match(rownames(.), kegg_db$lvD)])
+  
+  data_x <- filter(data, !grepl("\\|", name)) %>% 
+    aggregate(. ~ name, ., sum)
+  
+  data_y <- data %>% 
+    filter(grepl("\\|", name)) %>% 
+    aggregate(. ~ name, ., sum) %>% 
+    column_to_rownames("name") %>% 
+    t %>% 
+    data.frame(check.names = F) %>% 
+    map2_dfr(., colnames(.), \(x, y) 
+             { name = unlist(strsplit(y, "\\|"))
+               len = length(name)
+               perc = 1 / len
+               data.frame(matrix(rep(x * perc, len), nrow = len, byrow = T)) %>% 
+                 add_column(name = name) %>% 
+                 relocate(name)
+    }) %>% 
+    aggregate(. ~ name, ., sum)
+  colnames(data_y) <- colnames(data_x)
+  
+  out <- rbind(data_x, data_y) %>% 
+    aggregate(. ~ name, ., sum) %>% 
+    column_to_rownames("name")
+  
+  return(out)
+} 

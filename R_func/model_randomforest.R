@@ -1,7 +1,5 @@
-# Encoding: utf-8
-# Author: Jinxin Meng
-# Created Data：2022-5-29
-# Modified Date: 2022-9-1
+#### Jinxin Meng, 202205029, 20220901 ####
+# v1.2
 
 library(dplyr)
 library(tibble)
@@ -15,7 +13,7 @@ library(randomForest)
 # k为几折检验
 # seed设置随机种子, ntree设置随机森林的树数量
 # make.names修改一些复杂feature的名字，主要是预防报错，二者可以降低内存。我这里就是把名字替换了，R里可以直接用make.names()函数去修改某一个表的内容
-rf_Kfold <- function(otu, group, k, seed = 2023, ntree = 1000){
+rf_Kfold <- function(otu, group, k, seed = 2024, ntree = 1000){
   start_time <- Sys.time()
   otu <- data.frame(t(data.frame(otu, check.names = F)))
   # 随机按照K折采样
@@ -34,7 +32,7 @@ rf_Kfold <- function(otu, group, k, seed = 2023, ntree = 1000){
   colnames(otu) <- paste0("V", seq_len(ncol(otu)))
   otu$group <- as.factor(group$group[match(rownames(otu), group$sample)])
   pred <- rbind()
-  pb <- txtProgressBar(style = 3)
+  pb <- txtProgressBar(style = 3, width = 50, char = "#")
   for(j in 1:length(sample_result)){ # 划分测试集和训练集
     sample_j <- sample_result[[j]]
     test <- otu[sample_j,]
@@ -170,6 +168,7 @@ rf_variable_rank <- function(otu, group, seed = 2023, ntree = 1000) {
 # k为几折检验
 # seed设置随机种子
 rf_loom <- function(otu, group, seed = 2022, ntree = 1000){
+  otu <- select(otu, all_of(group$sample))
   set.seed(seed)
   otu <- data.frame(t(otu), check.names = F)
   colnames(otu) <- paste0("var_", seq_len(ncol(otu))) 
@@ -200,18 +199,20 @@ rf_loom <- function(otu, group, seed = 2022, ntree = 1000){
 # group文件是样本的分组信息，分组的列至少有sample和group,第一列必须为"sample"，第二列必须为"group"
 # seed设置随机种子, ntree设置随机森林的树数量
 # 返回一个预测结果的数据框
-rf_next_vaildate <- function(otu_x, otu_y, group, seed = 2022, ntree = 1000, label = "otu_x for modeling and otu_y for predicting"){
-  # record feature information
-  var <- colnames(otu_x)
-  # discovery data modeling
-  colnames(otu_x) <- paste0("var_", seq_len(ncol(otu_x)))
-  otu_x$group <- as.factor(group$group[match(rownames(otu_x), group$sample)])
+rf_next_vaildate <- function(otu_x, otu_y, group_x, group_y, seed = 2024, ntree = 1000, label = "otu_x for modeling and otu_y for predicting"){
+  otu_y <- otu_y[rownames(otu_x),]
+  
+  # discovery
+  rownames(otu_x) <- paste0("name_", seq_len(nrow(otu_x)))
+  otu_x <- data.frame(t(otu_x))
+  otu_x$group <- as.factor(group_x$group[match(rownames(otu_x), group_x$sample)])
   set.seed(seed)
   rf_model <- randomForest(group ~ ., data = otu_x, ntree = ntree, importance = F, proximity = T)
-  # validation data predicting
-  otu_y <- otu_y[var]
-  colnames(otu_y) <- paste0("var_", seq(ncol(otu_y)))    
-  otu_y$group <- factor(group$group[match(rownames(otu_y), group$sample)])
+  
+  # validation
+  rownames(otu_y) <- paste0("name_", seq_len(nrow(otu_y)))
+  otu_y <- data.frame(t(otu_y))
+  otu_y$group <- as.factor(group_y$group[match(rownames(otu_y), group_y$sample)])
   pred <- predict(rf_model, otu_y, type = 'prob') %>% 
     data.frame() %>% 
     rownames_to_column(var = "sample")

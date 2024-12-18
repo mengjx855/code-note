@@ -1,9 +1,4 @@
-# Encoding: utf-8
-# Author: Jinxin Meng
-# Email: mengjx855@163.com
-# Created Data：2023-11-10
-# Modified Data: 2023-12-16
-# Version: 0.1
+#### Jinxin Meng, 20231110, 20231216 v0.1 ####
 
 pacman::p_load(dplyr, tibble, tidyr)
 

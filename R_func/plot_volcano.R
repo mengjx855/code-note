@@ -1,17 +1,11 @@
-# Info ----
-# encoding: utf-8
-# author: Jinxin Meng
-# e-mail: mengjx855@163.com
-# created data：2024-03-28
-# modified data: 2024-03-28
-# version: 0.1
+#### Jinxin Meng, 20240328, 20240328, v0.1 ####
 
 library(dplyr)
 library(tibble)
 library(tidyr)
 library(ggplot2)
 
-## plot_volcano ----
+#### plot_volcano ####
 # diff, input a diff-like data.frame.
 # group_pair 传入一个向量；例如c("up","none","down)
 # 颜色是默认的，中间的是没有富集feature的颜色，如果改的话，只改开头和结尾的颜色就可
@@ -72,6 +66,5 @@ plot_volcano <- function(dat, dat_colnames = NULL,
   message("  ggsave(file = \"diff_volcano_scatterplot.pdf\", width = 6, height = 4.5)\n")
   return(p)
 }
-
 
 

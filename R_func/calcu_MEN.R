@@ -20,8 +20,7 @@ calcu_MEN <- function(profile, metadata, p.threshold = 0.05, r.threshold = 0.5,
     as.matrix() %>% 
     tax_table()
   ps <- phyloseq(otu_table, tax_table)
-  out <- list()
-  
+
   # 相关性分析
   cor_obj <- cor_Big_micro2(ps, N = 0, p.threshold = p.threshold, r.threshold = r.threshold,
                             scale = scale, method = method, p.adj = p.adj) 
@@ -92,15 +91,17 @@ calcu_MEN <- function(profile, metadata, p.threshold = 0.05, r.threshold = 0.5,
           panel.grid.minor = element_blank(),
           aspect.ratio = 1, plot.margin = unit(c(1, 1, 1, 1), "cm"))
   
-  out[["profile"]] <- profile
-  out[["metadata"]] <- metadata
-  out[["cor_obj"]] <- cor_obj
-  out[["igraph_obj"]] <- igraph
-  out[["network_attr"]] <- attr_data
-  out[["model_obj"]] <- model
-  out[["node_data"]] <- node_data
-  out[["edge_data"]] <- edge_data
-  out[["gplot"]] <- p 
+  out <- list(
+    profile = profile,
+    metadata = metadata,
+    cor_obj = cor_obj,
+    igraph_obj = igraph,
+    attr_data = attr_data,
+    model_obj = model,
+    node_data = node_data,
+    edge_data = edge_data,
+    plot = p )
+
   return(out)
 }
 

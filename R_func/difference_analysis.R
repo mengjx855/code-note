@@ -1,6 +1,5 @@
-# Jinxin Meng, 20231101, 20240630 -----------
+#### Jinxin Meng, 20231101, 20240630 v1.3 ####
 
-# Version: 1.3
 # 2023-10-25: add xlim parameter in plot_roc.
 # 2023-10-25: add trans parameter in get_feature_diff.
 # 2023-10-25: add map_name parameter in the get_feature_diff.
@@ -16,7 +15,7 @@ source("F:/code/R_func/utilities.R")
 source("F:/code/R_func/profile_process.R")
 
 
-# difference_analysis -------------------------------------
+#### difference_analysis ####
 # 对feature进行组间富集分析，绘制火山图并保存数据
 # profile输入正常的profile表
 # group表中分组列必须为group
@@ -143,7 +142,7 @@ difference_analysis <- function(profile, group, gp = NULL, trans = NULL, min_abu
   return(out)
 }
 
-# add_plab -----------------------------------------
+#### add_plab ####
 add_plab <- function(data, by = "pval", format = 1){
   if (sum(colnames(data) %in% by) == 0) stop("data must have columns (pval|padj)")
   if (format == 1) {

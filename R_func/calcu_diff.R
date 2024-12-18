@@ -1,4 +1,4 @@
-# Jinxin Meng, mengjx855@163.com, 20220101, 20240714, version: 0.5 -------------
+#### Jinxin Meng, mengjx855@163.com, 20220101, 20241205, v0.6 ####
 
 # 2022-06-01: 可选择"wilcox rank-sum","one-way anova","student's t test"三种方法做差异分析；
 # 2023-01-17: diff_test_profile函数对feature进行差异分析，输入的是标准otu表和group表
@@ -10,7 +10,7 @@ library(tibble)
 library(tidyr)
 library(ggplot2)
 
-# calcu_diff -------------
+#### calcu_diff ####
 # difference test；
 # 用于多组数据之间两两做差异分析；
 # dat输入长数据，一列sample, 一列要比较的数据；
@@ -28,7 +28,9 @@ library(ggplot2)
 # s4      g2
 calcu_diff <- function(dat, group, dat_colnames = NULL, group_colnames = NULL,
                        group_order = NULL, center_group = NULL, padj = F,
-                       method = "wilcox", paired = F, plab = F, cat = NULL) {
+                       method = "wilcox", var_equal = F, paired = F, plab = F, 
+                       cat = NULL) {
+  
   if (!all(c("sample", "value") %in% colnames(dat)) & is.null(dat_colnames)) stop("group field (sample|value)")
   if (!is.null(dat_colnames)) dat <- data.frame(dat, check.names = F) %>% dplyr::rename(all_of(dat_colnames))
   if (!all(c("sample", "group") %in% colnames(group)) & is.null(group_colnames)) stop("group field (sample|group)")
@@ -44,8 +46,11 @@ calcu_diff <- function(dat, group, dat_colnames = NULL, group_colnames = NULL,
   dat <- mutate(dat, group = group$group[match(sample, group$sample)])
   
   if (!is.null(cat)) cat(paste0("    Processing: ", cat, "\n"))
+  
   pb <- txtProgressBar(style = 3, width = 50, char = "#")
+  
   diff <- data.frame(gp = character(), pval = numeric(), method = character())
+  
   if (!is.null(center_group)) {
     group_order <- setdiff(group_order, center_group)
     if (method == "wilcox") {
@@ -54,7 +59,7 @@ calcu_diff <- function(dat, group, dat_colnames = NULL, group_colnames = NULL,
         dat_i <- subset(dat, group %in% group_order[i]) %>% dplyr::select(value) %>% unlist() %>% as.numeric()
         wilcox <- wilcox.test(dat_i, dat_center, paired = paired, exact = F)
         gp <- paste0(group_order[i], "_vs_", center_group)
-        diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(wilcox$p.value), method = "wilcoxon-rank sum")
+        diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(wilcox$p.value), method = "wilcoxon-rank sum test")
         setTxtProgressBar(pb, i/length(group_order))
       }
     } else if (method == "anova") {
@@ -63,16 +68,18 @@ calcu_diff <- function(dat, group, dat_colnames = NULL, group_colnames = NULL,
         dat_i <- subset(dat, sample %in% group_i$sample)
         anova <- oneway.test(value ~ group, dat_i)
         gp <- paste0(group_order[i], "_vs_", center_group)
-        diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(anova$p.value), method = "oneway anova")
+        diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(anova$p.value), method = "oneway anova test")
         setTxtProgressBar(pb, i/length(group_order))
       }
     } else if (method == "t") {
+      if (isTRUE(var_equal)) method_name = "student's t-test"
+      if (isFALSE(var_equal)) method_name = "Welch t-test"
       for (i in 1:length(group_order)) {
         group_i <- subset(group, group %in% c(group_order[i], center_group))
         dat_i <- subset(dat, sample %in% group_i$sample)
-        t <- stats::t.test(value ~ group, dat_i, paired = paired)
+        t <- stats::t.test(value ~ group, dat_i, paired = paired, var.equal = var_equal)
         gp <- paste0(group_order[i], "_vs_", center_group)
-        diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(t$p.value), method = "student's t")
+        diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(t$p.value), method = method_name)
         setTxtProgressBar(pb, i/length(group_order))
       }
     }
@@ -86,7 +93,7 @@ calcu_diff <- function(dat, group, dat_colnames = NULL, group_colnames = NULL,
           dat_j <- dat %>% subset(group %in% group_order[j]) %>% dplyr::select(value) %>% unlist() %>% as.numeric()
           wilcox <- wilcox.test(dat_i, dat_j, paired = paired, exact = F)
           gp <- paste0(group_order[i], "_vs_", group_order[j])
-          diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(wilcox$p.value), method = "wilcoxon-rank sum")
+          diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(wilcox$p.value), method = "wilcoxon-rank sum test")
           setTxtProgressBar(pb, x/choose(length(group_order), 2))
         }
       }
@@ -98,11 +105,13 @@ calcu_diff <- function(dat, group, dat_colnames = NULL, group_colnames = NULL,
           dat_ij <- subset(dat, sample %in% group_ij$sample)
           anova <- oneway.test(value ~ group, dat_ij)
           gp <- paste0(group_order[i], "_vs_", group_order[j])
-          diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(anova$p.value), method = "oneway anova")
+          diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(anova$p.value), method = "oneway anova test")
           setTxtProgressBar(pb, x/choose(length(group_order), 2))
         }        
       } 
     } else if (method == "t") {
+      if (isTRUE(var_equal)) method_name = "student's t-test"
+      if (isFALSE(var_equal)) method_name = "Welch t-test"
       for (i in 1:(length(group_order) - 1)) {
         for (j in (i + 1):length(group_order)) {
           x = x + 1
@@ -110,7 +119,7 @@ calcu_diff <- function(dat, group, dat_colnames = NULL, group_colnames = NULL,
           dat_ij <- subset(dat, sample %in% group_ij$sample)
           t <- stats::t.test(value ~ group, dat_ij, paired = paired)
           gp <- paste0(group_order[i], "_vs_", group_order[j])
-          diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(t$p.value), method = "student's t")
+          diff <- tibble::add_row(diff, gp = gp, pval = as.numeric(t$p.value), method = method_name)
           setTxtProgressBar(pb, x/choose(length(group_order), 2))
         }
       }
@@ -122,7 +131,7 @@ calcu_diff <- function(dat, group, dat_colnames = NULL, group_colnames = NULL,
   return(diff)
 }
 
-# calcu_diff_profile ---------------
+#### calcu_diff_profile ####
 # 用于对OTU表中所有的feature进行差异分析；
 # profile输入OTU表， 行为feature，列为sample；
 # group输入group表，一般是第一列是sample，第二列是group；如果不是这种情况，请用group_colnames指定一个改名字的向量

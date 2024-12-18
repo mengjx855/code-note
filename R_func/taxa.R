@@ -14,7 +14,7 @@ library(stringr)
 library(ggplot2)
 source("F:/code/r_func/profile_process.R")
 
-# taxa_split ####
+# taxa_split ----------
 # 拆分物种信息表
 # taxonomy: a data.frame containning two field, name|taxonomy..., also rename by taxonomy_name.
 # sep: the separate label.
@@ -73,8 +73,12 @@ taxa_trans <- function(otu, taxonomy, group, to = "family", top_n = 12, top_list
   dat <- otu %>% 
     mutate(taxa = taxonomy[match(rownames(.), taxonomy$name), to],
            taxa = ifelse(is.na(taxa), na_fill, taxa)) %>% 
-    group_by(taxa) %>% summarise_all(sum) %>% ungroup() %>% 
-    column_to_rownames(var = "taxa") %>% data.frame(check.names = F)
+    group_by(taxa) %>% 
+    summarise_all(sum) %>% 
+    ungroup() %>% 
+    filter(taxa != '') %>% 
+    column_to_rownames(var = "taxa") %>% 
+    data.frame(check.names = F)
   # trans taxon
   if(top_n > 0 & is.null(top_list)) {
     taxa_vec <- data.frame(val = rowSums(dat)) %>%
@@ -364,10 +368,10 @@ plot_taxa_boxplot <- function(profile, group, group_order = NULL, group_color = 
       pull(gp) %>% 
       strsplit(x = ., split = "_vs_")
     
-    p <- ggplot(dat_i, aes(x = factor(group, group_order), y = value, color = factor(group, group_order))) + 
-      geom_boxplot(fill = "transparent", outlier.size = .7, lwd = .4) +
+    p <- ggplot(dat_i, aes(x = factor(group, group_order), y = value, fill = factor(group, group_order))) + 
+      geom_boxplot(outlier.size = .7, lwd = .4) +
       geom_jitter(size = .7, width = .3) +
-      scale_color_manual(values = group_color) +
+      scale_fill_manual(values = group_color) +
       labs(x = xlab, y = ylab, color = legend_title, title = i) +
       ggpubr::stat_compare_means(comparisons = comparison, method = method, size = 3,
                                  method.args = list(exact = F), label = "p.signif", 
@@ -375,16 +379,16 @@ plot_taxa_boxplot <- function(profile, group, group_order = NULL, group_color = 
       theme_classic() +
       theme(axis.line = element_line(linewidth = .4, color = "#000000"),
             axis.ticks = element_line(linewidth = .4, color = "#000000"),
-            axis.text = element_text(size = 8, color = "#000000"),
-            axis.title = element_text(size = 8, color = "#000000"),
-            plot.title = element_text(size = 8, color = "#000000", hjust = .5, face = "italic"),
-            legend.text = element_text(size = 8, color = "#000000"),
-            legend.title = element_text(size = 8, color = "#000000"),
+            axis.text = element_text(size = 10, color = "#000000"),
+            axis.title = element_text(size = 10, color = "#000000"),
+            plot.title = element_text(size = 10, color = "#000000", hjust = .5, face = "italic"),
+            legend.text = element_text(size = 10, color = "#000000"),
+            legend.title = element_text(size = 10, color = "#000000"),
             panel.grid = element_blank(),
             aspect.ratio = aspect_ratio) +
       guides(color = "none")
     if (isFALSE(show_legend)) {
-      p <- p + guides(color = "none")
+      p <- p + guides(fill = "none")
     }
     p_list[[i]] <- p
   }

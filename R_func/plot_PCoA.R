@@ -1,4 +1,4 @@
-#### info ####
+# info ####
 # encoding: utf-8
 # author: Jinxin Meng
 # e-mail: mengjx855@163.com
@@ -16,7 +16,7 @@ library(tidyr)
 library(ggplot2)
 library(vegan)
 
-#### calcu_PCoA ####
+# calcu_PCoA ####
 # PCoA analysis
 # input: profile | distance
 # dim: how many dimension is used to analyze
@@ -95,7 +95,7 @@ calcu_PCoA <- function(profile, distance, group, group_colnames = NULL, dim = 2,
   return(out)
 }
 
-#### plot_PCoA ####
+# plot_PCoA ####
 # PCoA analysis
 # input: profile & sample_group
 # group_colnames: a vector for current colnames of the data.frame with new name.
@@ -219,7 +219,7 @@ plot_PCoA <- function(profile, group, distance,
   return(p)
 }
 
-#### calcu_pairwise_adonis ####
+# calcu_pairwise_adonis ####
 # PREMANOVA analysis
 # input: profile & mapping
 # group_order: group order
@@ -254,7 +254,7 @@ calcu_pairwise_adonis <- function(profile, group,
 }
 
 
-#### calcu_distance ####
+# calcu_distance ----------
 calcu_distance <- function(profile, method = "unifrac", tree, weighted = T, ...) {
   if (method == "unifrac") {
     if (missing(tree)) stop("need phylogentic tree if calcu unifrac-based distance\n🥰 input a tree: ape::read.tree(\"genomospecies.tre\")")
@@ -269,4 +269,54 @@ calcu_distance <- function(profile, method = "unifrac", tree, weighted = T, ...)
   return(distance)
 }
 
-
+# calcu_betadisper -------------
+calcu_betadisper <- function(profile, group, distance, group_order = NULL, group_color = NULL, 
+                             group_colnames = NULL, dis_method = "bray") {
+  if (!all(c("sample", "group") %in% colnames(group)) & is.null(group_colnames)) stop("group field (sample|group)")
+  if (!is.null(group_colnames)) group <- data.frame(group, check.names = F) %>% dplyr::rename(all_of(group_colnames))
+  if (is.null(group_order)) group_order <- unique(group$group)
+  if (is.null(group_color)) {
+    color <- c("#66c2a5","#fc8d62","#8da0cb","#e78ac3","#a6d854","#ffd92f","#e5c494","#b3b3b3")
+    group_color <- rep(color, times = ceiling(length(group_order)/length(color)))[1:length(group_order)]
+  }
+  
+  if (!missing(profile) & missing(distance)) {
+    distance <- vegdist(t(data.frame(profile, check.names = F)), method = dis_method, na.rm = T)
+  } else if (missing(profile) & !missing(distance)) {
+    distance <- distance
+  } else {
+    stop("Error in distance compute: cannot open profile or distance data.")
+  }
+  
+  group <- group[match(rownames(as.matrix(distance)), group$sample),] %>% 
+    as.data.frame(row.names = NULL)
+  dispersion <- betadisper(distance, group$group)
+  
+  centroids <- dispersion$centroids
+  points <- dispersion$vectors
+  distance_to_centroid = map_dfr(group_order, \(x) 
+                                 apply(points[group[group$group == x, "sample"],], 1, \(y) 
+                                       sqrt(sum((y - centroids[x,])^2)) ) %>% 
+                                   data.frame(value = .) ) %>% 
+    rownames_to_column("sample") %>% 
+    left_join(group, by = "sample") %>% 
+    mutate(group = factor(group, levels = group_order))
+  
+  plot <- ggpubr::ggboxplot(distance_to_centroid, "group", "value", fill = "group", 
+                            palette = group_color, legend = "none", 
+                            xlab = "", ylab = "Distance to centroid", outlier.size = 1) +
+    theme(aspect.ratio = 1)
+  
+  out <- list(
+    dispersion = dispersion,
+    distance = distance,
+    group = group,
+    test = list(anova = anova(dispersion),
+                permutest = permutest(dispersion),
+                TukeyHSD = TukeyHSD(dispersion)),
+    distance_to_centroid = distance_to_centroid,
+    plot = plot
+  )
+  
+  return(out)
+}

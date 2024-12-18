@@ -19,7 +19,7 @@ library(ggpubr)
 source("F:/Code/R_func/calcu_diff.R")
 
 #### calcu_alpha ####
-# export data.frame with colnames (sample|val)
+# export data.frame with colnames (sample|value)
 calcu_alpha <- function(profile, 
                         method = "richness", 
                         out_colnames = NULL, 
@@ -44,21 +44,21 @@ calcu_alpha <- function(profile,
     result <- 1 - rowSums(otu_table == 1) / rowSums(otu_table)
   } else if (method == "pd" & !is.null(tree)) { 
     library(picante) %>% suppressMessages()
-    pd <- pd(otu_table, tree, include.root = F)
+    pd <- pd(otu_table, tree, include.root = F) # 需要有根树
     result <- pd[,1]
     names(result) <- rownames(pd)
   }
-  index <- data.frame(sample = names(result), val = result, row.names = NULL)
+  index <- data.frame(sample = names(result), value = result, row.names = NULL)
   if (!is.null(out_colnames) & is.character(out_colnames)) colnames(index)[2] <- out_colnames
   return(index)
 }
 
 #### plot_alpha ####
 # alpha diversity index;
-# dat: a data.frame with colnames (sample|val)
+# dat: a data.frame with colnames (sample|value)
 # group: a data.frame with colnames (sample|group)
 # dat_colnames|group_colnames: a vector for current colnames of the data.frame with new name.
-# for example: group_colnames = c(sample = "Sample", val = "Val")
+# for example: group_colnames = c(sample = "Sample", value = "Value")
 # group_order: group order
 # group_color: group color
 # diff_test()
@@ -68,7 +68,7 @@ plot_alpha <- function(dat, group, group_order = NULL, group_color = NULL,
                        aspect_ratio = 1, show_grid = T, 
                        rotate_x_text = F, coord_flip = F,
                        diff_test = T, method = "wilcox") {
-  if (!all(c("sample", "val") %in% colnames(dat)) & is.null(dat_colnames)) stop("dat field (sample|val)")
+  if (!all(c("sample", "value") %in% colnames(dat)) & is.null(dat_colnames)) stop("dat field (sample|value)")
   if (!all(c("sample", "group") %in% colnames(group)) & is.null(group_colnames)) stop("group field (sample|group)")
   if (!is.null(dat_colnames)) dat <- data.frame(dat, check.names = F) %>% dplyr::rename(all_of(dat_colnames))
   if (!is.null(group_colnames)) group <- data.frame(group, check.names = F) %>% dplyr::rename(all_of(group_colnames))
@@ -80,7 +80,7 @@ plot_alpha <- function(dat, group, group_order = NULL, group_color = NULL,
   
   plotdat <- merge(dat, group, by = "sample", all = T) %>% mutate(group = factor(group, levels = group_order))
 
-  p <- ggplot(plotdat, aes(x = group, y = val, fill = group)) + 
+  p <- ggplot(plotdat, aes(x = group, y = value, fill = group)) + 
     geom_boxplot(width = .7, color = "black", outlier.shape = NA, lwd = .4, show.legend = F) +
     geom_jitter(aes(color = group), size = .7, width = .2, show.legend = F) +
     scale_fill_manual(values = group_color) +

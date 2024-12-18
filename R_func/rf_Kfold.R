@@ -16,7 +16,7 @@ library(tidyr)
 # k为几折检验
 # seed设置随机种子, ntree设置随机森林的树数量
 # make.names修改一些复杂feature的名字，主要是预防报错，二者可以降低内存。我这里就是把名字替换了，R里可以直接用make.names()函数去修改某一个表的内容
-rf_Kfold <- function(otu, group, k, seed = 2023, ntree = 1000){
+rf_Kfold <- function(otu, group, k, seed = 2024, ntree = 1000){
   start_time <- Sys.time()
   otu <- data.frame(t(data.frame(otu, check.names = F)))
   # 随机按照K折采样
@@ -35,7 +35,7 @@ rf_Kfold <- function(otu, group, k, seed = 2023, ntree = 1000){
   colnames(otu) <- paste0("V", seq_len(ncol(otu)))
   otu$group <- as.factor(group$group[match(rownames(otu), group$sample)])
   pred <- rbind()
-  pb <- txtProgressBar(style = 3)
+  pb <- txtProgressBar(style = 3, width = 50, char = "#")
   for(j in 1:length(sample_result)){ # 划分测试集和训练集
     sample_j <- sample_result[[j]]
     test <- otu[sample_j,]

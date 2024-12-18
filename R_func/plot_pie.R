@@ -48,8 +48,8 @@ plot_pie <- function(dat, dat_colnames = NULL, desc = T, order_list = NULL, top_
   
   if(length(fill) == 1) {
     if (fill == "auto") {
-      # fill <- c("#66c2a5","#fc8d62","#8da0cb","#e78ac3","#a6d854","#ffd92f", "#8dd3c7","#fdb462","#80b1d3","#fccde5","#d9ef8b","#fee391")
-      fill <- c("#82ccdc","#f0ad80","#b4b3d8","#c2b75f","#87CCBA","#F9C851","#ACDEF3","#F9C6B3","#F5EAF2","#D3EDE4")
+      fill <- c("#66c2a5","#fc8d62","#8da0cb","#e78ac3","#a6d854","#ffd92f", "#8dd3c7","#fdb462","#80b1d3","#fccde5","#d9ef8b","#fee391")
+      # fill <- c("#82ccdc","#f0ad80","#b4b3d8","#c2b75f","#87CCBA","#F9C851","#ACDEF3","#F9C6B3","#F5EAF2","#D3EDE4")
       fill <- rep(fill, time = (ceiling(nrow(dat)/10)))[1:nrow(dat)]
     } else if (fill == "hue") {
       fill <- scales::hue_pal()(nrow(dat))
