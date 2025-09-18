@@ -40,7 +40,7 @@ rc2fpkm <- function(profile, len, len_colnames = NULL) {
   len <- tibble::column_to_rownames(len, var = "name")
   len <- len[rownames(profile),]
   reads <- colSums(profile)
-  fpkm <- apply(profile, 2, function(x) x*1e12/len) %>% 
+  fpkm <- apply(profile, 2, function(x) x*1e9/len) %>% 
     apply(., 1, function(x) x/reads) %>% 
     t() %>% 
     data.frame(check.names = F)
